@@ -13,7 +13,7 @@ const Auth = () => {
         axios.get("http://localhost:1234/auth/check")
             .then((res) => {
                 if (res.data.authenticated) {
-                    navigate("/dashboard");
+                    navigate("/kiosk");
                 }
             })
             .catch(() => navigate("/"));

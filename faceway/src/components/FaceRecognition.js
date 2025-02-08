@@ -1,13 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 
 const FaceRecognition = () => {
   const videoRef = useRef(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [isNewUser, setIsNewUser] = useState(null);
   const [descriptor, setDescriptor] = useState(null);
+  const [isScanning, setIsScanning] = useState(true);
+  const [scanningInterval, setScanningInterval] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadModels = async () => {
@@ -16,7 +20,6 @@ const FaceRecognition = () => {
       await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
       console.log("Face-API models loaded!");
     };
-    
     loadModels();
     startVideo();
   }, []);
@@ -24,45 +27,72 @@ const FaceRecognition = () => {
   const startVideo = () => {
     navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => {
       videoRef.current.srcObject = stream;
+      initiateScanning();
     });
   };
 
-  const captureFace = async () => {
+  const initiateScanning = () => {
     if (!videoRef.current) return;
-    
-    const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    if (scanningInterval) clearInterval(scanningInterval);
   
-    if (detection) {
-      setDescriptor(detection.descriptor);
-      console.log("Face detected!");
-    } else {
-      console.log("No face detected. Try again.");
-    }
+    const interval = setInterval(async () => {
+      if (!isScanning || !videoRef.current) return;
+  
+      const detection = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+  
+      if (detection) {
+        setDescriptor(detection.descriptor);
+        console.log("✅ Face detected! Checking for a match...");
+        recognizeFace(detection.descriptor);
+        setIsScanning(false);
+        clearInterval(interval);
+      } else {
+        console.log("❌ No face detected. Adjust lighting and position.");
+      }
+    }, 2000);
+    setScanningInterval(interval);
   };
   
-const registerFace = async () => {
+
+  const recognizeFace = async (faceDescriptor) => {
+    if (!faceDescriptor) return;
+    try {
+      const res = await axios.post("http://localhost:1234/recognize", { descriptor: faceDescriptor });
+      if (res.data.success) {
+        navigate("/stats", { state: { name: res.data.name, email: res.data.email, shopName: "Your Business Name", facepoints: res.data.facepoints } });
+      } else {
+        console.log("User not recognized.");
+        setIsScanning(true);
+        initiateScanning();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Recognition failed!");
+    }
+  };
+
+  const registerFace = async () => {
     if (!descriptor) {
       alert("No face detected! Please look into the camera.");
       return;
     }
-  
     if (!name || !email) {
       alert("Please enter both name and email.");
       return;
     }
-  
     try {
       const res = await axios.post("http://localhost:1234/register", {
         name,
         email,
         descriptor,
       });
-  
       if (res.data.success) {
         alert("User registered successfully!");
+        setIsScanning(true);
+        initiateScanning();
       } else {
         alert("Registration failed: " + res.data.message);
       }
@@ -71,46 +101,17 @@ const registerFace = async () => {
       alert("Registration failed! Please check the backend.");
     }
   };
-  
-
-  const recognizeFace = async () => {
-    if (!descriptor) {
-      alert("Please capture a face first.");
-      return;
-    }
-
-    try {
-      const res = await axios.post("http://localhost:1234/recognize", { descriptor });
-      alert(res.data.success ? `Welcome, ${res.data.email}!` : "User not recognized.");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Recognition failed!");
-    }
-  };
 
   return (
     <div>
       <h2>Face Recognition</h2>
-      <video ref={videoRef} autoPlay playsInline width="400" height="300" onPlay={captureFace} />
-
-      {isNewUser === null && (
-        <div>
-          <button onClick={() => setIsNewUser(true)}>New User</button>
-          <button onClick={() => setIsNewUser(false)}>Existing User</button>
-        </div>
-      )}
-
-      {isNewUser === true && (
+      <video ref={videoRef} autoPlay playsInline width="400" height="300" />
+      <button onClick={() => { setIsScanning(false); clearInterval(scanningInterval); }}>Add New User</button>
+      {!isScanning && (
         <div>
           <input type="text" placeholder="Enter Name" onChange={(e) => setName(e.target.value)} />
           <input type="email" placeholder="Enter Email" onChange={(e) => setEmail(e.target.value)} />
           <button onClick={registerFace}>Register Face</button>
-        </div>
-      )}
-
-      {isNewUser === false && (
-        <div>
-          <button onClick={recognizeFace}>Recognize Face</button>
         </div>
       )}
     </div>
