@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import * as faceapi from "face-api.js";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
+import "./FaceRecognition.css";
 
 const FaceRecognition = () => {
   const videoRef = useRef(null);
@@ -55,7 +55,6 @@ const FaceRecognition = () => {
     }, 2000);
     setScanningInterval(interval);
   };
-  
 
   const recognizeFace = async (faceDescriptor) => {
     if (!faceDescriptor) return;
@@ -103,15 +102,19 @@ const FaceRecognition = () => {
   };
 
   return (
-    <div>
-      <h2>Face Recognition</h2>
-      <video ref={videoRef} autoPlay playsInline width="400" height="300" />
-      <button onClick={() => { setIsScanning(false); clearInterval(scanningInterval); }}>Add New User</button>
+    <div className="face-recognition-container">
+      <h2 className="title">Face Recognition</h2>
+      <div className="video-container">
+        <video ref={videoRef} autoPlay playsInline className="camera-feed" />
+      </div>
+      <button className="action-button" onClick={() => { setIsScanning(false); clearInterval(scanningInterval); }}>
+        Add New User
+      </button>
       {!isScanning && (
-        <div>
-          <input type="text" placeholder="Enter Name" onChange={(e) => setName(e.target.value)} />
-          <input type="email" placeholder="Enter Email" onChange={(e) => setEmail(e.target.value)} />
-          <button onClick={registerFace}>Register Face</button>
+        <div className="form-container">
+          <input type="text" placeholder="Enter Name" className="input-field" onChange={(e) => setName(e.target.value)} />
+          <input type="email" placeholder="Enter Email" className="input-field" onChange={(e) => setEmail(e.target.value)} />
+          <button className="register-button" onClick={registerFace}>Register Face</button>
         </div>
       )}
     </div>

@@ -3,7 +3,6 @@ import FaceRecognition from "./FaceRecognition";
 import Stats from "./Stats";
 import adImage1 from "../assets/ad1.jpg"; 
 import adImage2 from "../assets/ad2.jpg";
-import gifBG from "../assets/adbg.gif";
 import * as faceapi from "face-api.js";
 
 const Kiosk = () => {
@@ -75,21 +74,15 @@ const Kiosk = () => {
       <div style={{ 
       textAlign: "center", 
       padding: "20px", 
-      position: "relative", 
-      height: "100vh",
-      backgroundImage: `url(${gifBG})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      color: "white"
+      position: "relative"
     }}>
       {!showFaceRecognition && !showStats && (
         <div>
-          <h2>Advertisement</h2>
           <img src={currentAd} alt="Ad" style={{ width: "80%", maxHeight: "800px", transition: "opacity 1s ease-in-out" }} />
           <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
           <div style={{
             position: "absolute",
-            bottom: "60px",
+            bottom: "1px",
             width: "96%",
             textAlign: "center",
             background: "rgba(0, 0, 0, 0.7)",
